@@ -18,3 +18,9 @@ import '/imports/client/custom/vq/templates/VQ_DSS_schema.js'
 // import '/imports/client/custom/vq/templates/add_subquery_form.html'
 import '/imports/client/custom/vq/templates/ajoo_bkus.html'
 import '/imports/client/custom/vq/templates/loginBranding.html'
+
+
+import '/imports/client/custom/vq/templates/addFieldsDocumentDB_form.js'
+import '/imports/client/custom/vq/templates/add_conditionDocument_form.js'
+import '/imports/client/custom/vq/templates/show_mongoDB_code.js'
+

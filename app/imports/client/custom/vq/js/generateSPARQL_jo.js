@@ -12,6 +12,97 @@ Interpreter.customMethods({
 
   Foo: function() { console.log("This menu item does nothing") },
 
+  GenerateMongoQuery : async function() {
+
+    let element = new VQ_Element(Session.get("activeElement"));
+    //let fields = null;
+    /*if(element.getType() === "box"){
+      fields = element.getCompartmentValue("Fields");
+    }*/
+    let fields = element.getCompartmentValue("Fields");
+
+
+    let element2 = new VQ_Element(Session.get("activeElement"));
+    let links = element2.getLinks()
+    //console.log(links);
+    let conditions = null;
+    if(links && links != []){
+      let endClass = new VQ_Element(links[0].link.obj.endElement);
+      conditions = endClass.getCompartmentValue("Conditions");
+    }
+
+    //console.log(conditionText);
+    let conditionsList =[];
+    //Ja ir kaut viens nosacījums vaicājumam
+    if(conditions != null){
+      let conditionsArrayRaw = conditions.split(',');
+      conditionsArrayRaw.pop();
+      //console.log(conditionsArrayRaw);
+      //let conditionsList =[];
+
+      for(let i = 0 ; i < conditionsArrayRaw.length; i++){
+        let conditionTrio = conditionsArrayRaw[i].split(';');
+        let conditionTrioTrimmed = conditionTrio.map(element => element.trim());
+        conditionsList.push({
+          field: conditionTrioTrimmed[0],
+          operation: conditionTrioTrimmed[1],
+          value: conditionTrioTrimmed[2]
+        });
+      }
+      //console.log(conditionsList);
+    }
+
+    let fieldsList = [];
+
+    if(fields != null){
+      let fieldsArrayRaw = fields.split(',');
+      fieldsArrayRaw.pop();
+      //console.log(fieldsArrayRaw);
+      fieldsList = fieldsArrayRaw.map(element => element.trim());
+    }
+    console.log(fieldsList);
+    let cleanFieldsList = [];
+    //Check if there are both nested field root fields(which imply the whole nested field should be shown, including the sub-fields) and the sub fields are present
+    //in the selected fields. Cleaning up the list so no errors.
+    for(let field of fieldsList){
+      if(field.includes('.')){
+        let nestedField = field.split('.');
+        let nestedFieldRootName = nestedField[0];
+
+        if (cleanFieldsList.includes(nestedFieldRootName)) {
+            continue;
+        } else {
+            cleanFieldsList.push(field);
+        }
+      } else{
+        cleanFieldsList.push(field);
+      }
+    }
+
+    let data = {};
+    data["collection"] = "Cilveks";
+    data["database"] = "test";
+    data["conditions"] = conditionsList;
+    data["fields"] = {};
+    //for(let i = 0 ; i < fieldsList.length ; i++){
+    for(let i = 0 ; i < cleanFieldsList.length ; i++){
+      let field = cleanFieldsList[i];
+      //console.log(field);
+      data["fields"][field] = 1;
+    }
+
+    console.log(data);
+
+    let queryData = GenerateMongoQueryString(data);
+    //let result = ExecuteMongoString(queryData[0],queryData[1], client);
+
+    console.log(queryData);
+
+    setTextinMongoDB(queryData);
+  },
+
+
+
   ExecuteSPARQL_from_diagram: async function() {
     // get _id of the active ajoo diagram
     var diagramId = Session.get("activeDiagram");
@@ -294,6 +385,9 @@ Interpreter.customMethods({
 	var editor = Interpreter.editor;
 		var elem = _.keys(editor.getSelectedElements());
 
+
+    console.log(elem);
+
     // now we should find the connected classes ...
     if (elem) {
        var selected_elem = new VQ_Element(elem[0]);
@@ -434,6 +528,66 @@ Interpreter.customMethods({
   },
 });
 
+function GenerateMongoQueryString(data){
+  //let findQuery = data["database"]+"."+data["collection"]+".find(";
+  let findQuery = "db."+data["collection"]+".find(";
+  // middleText = "projection: {";
+  let query = "{";
+  let projection = "{";
+  let options = "{";
+  //TODO: query sataisīšana
+
+  if(data["conditions"] && data["conditions"]!== []){
+      let conditions = data["conditions"];
+        //query = data["conditions"];
+      conditions.forEach(condition => {
+        //console.log(`Name: ${triplet.name}, Operation: ${triplet.operation}, Value: ${triplet.value}`);
+        //console.log('---'); // Separator for readability
+        let conditionString = condition.field + ": {$"+ condition.operation + ": \""+ condition.value + "\"},";
+        query += conditionString;
+      });
+  /*
+  * { <field1>: { <operator1>: <value1> }, ... } ir tipisks condition piemērs
+  * Piemēram, { vecums: {$gt: 15}, }
+  * Par laukiem, ja nav norādīti, kuri lauki, tad query var atstāt tukšu.
+  * Atcerēties nomainīt/pārbaudīt, ka, ja tas ir string, tad ievadīt kā string, nevis atstāt kā vērtību
+  * */
+  }
+  //console.log(data);
+  if(data["fields"] && data["fields"]!== []){
+    let fields = data["fields"];
+    //console.log(fields);
+    for(let field in fields){
+      //console.log(field);
+      if(field.includes('.')){
+        projection += "\""+ field+"\": "+fields[field]+", ";
+      }else{
+        projection += field+": "+fields[field]+", ";
+      }
+    }
+  }
+  //let options = "{" + middleText + "},}";
+  //console.log(options);
+
+  query = query + "}";
+  projection = projection +"}";
+  options = options +"}";
+
+  findQuery = findQuery + query +","+ projection+","+ options + ")";
+  //console.log(findQuery);
+  //return [query,options];
+  return findQuery;
+}
+
+function setTextinMongoDB(text){
+  //let querySpace = Template.mongoDBForm.query.get();
+  //querySpace.setValue(text);
+  let querySpace = document.getElementById("generated-mongoDB");
+  querySpace.innerText=text;
+}
+
+
+
 // generate SPARQL for given id-s
 async function GenerateSPARQL_for_ids(list_of_ids, root_elements_ids) {
   Interpreter.destroyErrorMsg();
@@ -462,7 +616,7 @@ async function GenerateSPARQL_for_ids(list_of_ids, root_elements_ids) {
 				Interpreter.showErrorMsg(q.warnings.join(" // "), -3); 
 			}
 	   var abstractQueryTable = await resolveTypesAndBuildSymbolTable(q);
-	   // console.log(abstractQueryTable, JSON.stringify(abstractQueryTable,null,2));
+	    //console.log(abstractQueryTable, JSON.stringify(abstractQueryTable,null,2));
 	   var rootClass = abstractQueryTable["root"];
 	  let result = generateSPARQLtext(abstractQueryTable);
 	  // console.log(result["SPARQL_text"]);
