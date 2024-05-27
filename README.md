@@ -1,4 +1,23 @@
 [![License](http://img.shields.io/:license-mit-blue.svg)](https://raw.githubusercontent.com/LUMII-Syslab/viziquer/master/LICENSE)
+
+## Bakalaura darbs
+
+Bakalaura laikā izstrādātais kods ir izveidots konkrētos failos. Commit, kas ir veidoti no lietotāja "KagisB", ir Kārļa Boša izstrādātais kods bakalaura darba praktiskās daļas izstrādei.
+
+Failā /app/imports/client/custom/vq/js/generateSPARQL_jo.js ir izveidotas 3 funkcijas:
+- "GenerateMongoQuery", kas ir funkcija, kuru izsauc, nospiežot uz diagrammas, lai ģenerētu vaicājuma tekstu. Tā savāc ievaddatus un nodot apakšfunkcijai.
+- "GenerateMongoQueryString", kas ir funkcija, kas izveido vaicājuma tekstu no padotajiem ievaddatiem.
+- "setTextinMongoDB", kas ir vienkārša funkcija, kas gatavo vaicājuma tekstu ieliek diagrammas skatā, lai viegli varētu to nokopēt.
+
+Ir izveidoti faili, kuri uzglabā ievaddatu skatu un funkcionalitāti datu saglabāšanai, kas atrodami /app/imports/client/custom/vq/templates mapītē.
+Funkcionalitāti nodrošina:
+- add_conditionDocument_form.html
+- add_conditionDocument_form.js
+- addFieldsDocumentDB_form.html
+- addFieldsDocumentDB_form.js
+- show_mongoDB_code.html
+- show_mongoDB_code.js
+
 # ViziQuer
 
 The aim of the ViziQuer project is to provide visual/diagrammatic environment for ontology-based data query definition and execution.
